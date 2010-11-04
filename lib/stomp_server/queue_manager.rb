@@ -20,7 +20,8 @@
 module StompServer
 class QueueMonitor
 
-  def initialize(qstore,queues)
+  def initialize(qstore,queues,opts={})
+    @monitor_sleep_time = opts[:monitor_sleep_time]||5 
     @qstore = qstore
     @queues = queues
     @stompid = StompServer::StompId.new
@@ -29,7 +30,7 @@ class QueueMonitor
 
   def start
     count =0
-    EventMachine::add_periodic_timer 5, proc {count+=1; monitor(count) }
+    EventMachine::add_periodic_timer @monitor_sleep_time, proc {count+=1; monitor(count) }
   end
 
   def monitor(count)
@@ -37,7 +38,7 @@ class QueueMonitor
     users = @queues['/queue/monitor']
     return if users.size == 0
     stats = @qstore.monitor
-    return if stats.size == 0
+#    return if stats.size == 0
     body = ''
 
     stats.each do |queue,qstats|
@@ -53,19 +54,19 @@ class QueueMonitor
     }
 
     frame = StompServer::StompFrame.new('MESSAGE', headers, body)
-    users.each {|user| user.user.stomp_send_data(frame)}
+    users.each {|user| user.connection.stomp_send_data(frame)}
   end
 end
 
 class QueueManager
   Struct::new('QueueUser', :connection, :ack)
 
-  def initialize(qstore)
+  def initialize(qstore, opts={})
     @qstore = qstore
     @queues = Hash.new { Array.new }
     @pending = Hash.new
     if $STOMP_SERVER
-      monitor = StompServer::QueueMonitor.new(@qstore,@queues)
+      monitor = StompServer::QueueMonitor.new(@qstore,@queues,opts)
       monitor.start
       puts "Queue monitor started" if $DEBUG
     end
@@ -171,7 +172,7 @@ class QueueManager
   def sendmsg(frame)
     frame.command = "MESSAGE"
     dest = frame.headers['destination']
-    puts "Sending a message to #{dest}: #{frame}"
+    puts "Sending a message to #{dest}: "
     # Lookup a user willing to handle this destination
     available_users = @queues[dest].reject{|user| @pending[user.connection]}
     if available_users.empty?
