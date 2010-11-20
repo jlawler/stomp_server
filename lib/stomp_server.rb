@@ -28,6 +28,7 @@ module StompServer
         :working_dir => Dir.getwd,
         :storage => ".stompserver",
         :logdir => 'log',
+        :monitor_sleep_time => 5,
         :configfile => 'stompserver.conf',
         :logfile => 'stompserver.log',
         :pidfile => 'stompserver.pid',
@@ -44,6 +45,7 @@ module StompServer
       copts = OptionParser.new
       copts.on("-C", "--config=CONFIGFILE", String, "Configuration File (default: stompserver.conf)") {|c| @defaults[:configfile] = c}
       copts.on("-p", "--port=PORT", Integer, "Change the port (default: 61613)") {|p| @defaults[:port] = p}
+      copts.on("-m", "--monitor-interval=TIME", Float, "Change the sleep time between monitor updates") {|p| @defaults[:monitor_sleep_time] = p}
       copts.on("-b", "--host=ADDR", String, "Change the host (default: localhost)") {|a| @defaults[:host] = a}
       copts.on("-q", "--queuetype=QUEUETYPE", String, "Queue type (memory|dbm|activerecord|file) (default: memory)") {|q| @defaults[:queue] = q}
       copts.on("-w", "--working_dir=DIR", String, "Change the working directory (default: current directory)") {|s| @defaults[:working_dir] = s}
@@ -137,7 +139,7 @@ module StompServer
       qstore.checkpoint_interval = @opts[:checkpoint]
       puts "Checkpoing interval is #{qstore.checkpoint_interval}" if $DEBUG
       @topic_manager = StompServer::TopicManager.new
-      @queue_manager = StompServer::QueueManager.new(qstore)
+      @queue_manager = StompServer::QueueManager.new(qstore, :monitor_sleep_time => @opts[:monitor_sleep_time])
       @auth_required = @opts[:auth]
 
       if @auth_required

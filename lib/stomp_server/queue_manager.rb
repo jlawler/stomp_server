@@ -20,7 +20,8 @@
 module StompServer
 class QueueMonitor
 
-  def initialize(qstore,queues)
+  def initialize(qstore,queues,opts={})
+    @monitor_sleep_time = opts[:monitor_sleep_time]||5 
     @qstore = qstore
     @queues = queues
     @stompid = StompServer::StompId.new
@@ -29,7 +30,7 @@ class QueueMonitor
 
   def start
     count =0
-    EventMachine::add_periodic_timer 5, proc {count+=1; monitor(count) }
+    EventMachine::add_periodic_timer @monitor_sleep_time, proc {count+=1; monitor(count) }
   end
 
   def monitor(count)
@@ -60,12 +61,12 @@ end
 class QueueManager
   Struct::new('QueueUser', :connection, :ack)
 
-  def initialize(qstore)
+  def initialize(qstore, opts={})
     @qstore = qstore
     @queues = Hash.new { Array.new }
     @pending = Hash.new
     if $STOMP_SERVER
-      monitor = StompServer::QueueMonitor.new(@qstore,@queues)
+      monitor = StompServer::QueueMonitor.new(@qstore,@queues,opts)
       monitor.start
       puts "Queue monitor started" if $DEBUG
     end
