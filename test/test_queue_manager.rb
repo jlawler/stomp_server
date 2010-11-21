@@ -15,7 +15,7 @@ class TestQueues < Test::Unit::TestCase
       @qstore = qstore
       @queue_stats = Hash.new
       @queues = Hash.new { Array.new }
-      @pending = Hash.new { Array.new }
+      @pending = Hash.new 
     end
   end
   
