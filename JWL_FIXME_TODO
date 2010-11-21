@@ -1,0 +1,19 @@
+In addition to the TODO's I've added inline, the following things also need to be addressed:
+  * Use log4r (or something) to do logging.  I need to migrate off of "puts" asap.
+  * the @pending var in queue_manager is a hash (key connection, value frames) that stores what messages
+    the connection still hasn't ACKed.  Rename this, and expand it so we can actually do transactions.
+  * 
+  * Because of the way the internal algs work, we only have to pull messages out of the 
+    per-connection-queue on ACK.  The only way it could have an element in it's per-connection-queue is 
+    because someone tried to write to it, but it had a message pending.
+    
+
+
+Note:  The general algorithm is this:
+  when someone sends a message:
+    Can someone accept it?  If so, send it to them.
+    else: queue it up.
+
+  when someone acks a message:
+    Do we have any pending messages?  If so, send it to them.
+

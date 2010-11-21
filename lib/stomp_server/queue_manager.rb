@@ -127,6 +127,10 @@ class QueueManager
   end
 
   def ack(connection, frame)
+    # JWLTODO
+    # Restructure this:  If we get an hack for an unknown msg
+    # we shouldn't just reutrn, we should still send_a_backlog
+    # -- JWL 2010/11/20
     puts "Acking #{frame.headers['message-id']}" if $DEBUG
     unless @pending[connection]
       puts "No message pending for connection!"
@@ -173,6 +177,12 @@ class QueueManager
     frame.command = "MESSAGE"
     dest = frame.headers['destination']
     puts "Sending a message to #{dest}: "
+
+    # JWLTODO: 
+    # Change this to conditionally add the message to all appropriate users 
+    # per-connection-queue, if the destination is a "broadcast" topic.
+    # -- JWL 2010/11/20
+
     # Lookup a user willing to handle this destination
     available_users = @queues[dest].reject{|user| @pending[user.connection]}
     if available_users.empty?
