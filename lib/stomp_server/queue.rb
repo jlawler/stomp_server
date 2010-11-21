@@ -6,6 +6,7 @@ class Queue
     @stompid = StompServer::StompId.new
     @delete_empty = delete_empty
     @directory = directory
+    @checkpoint_interval=0
     Dir.mkdir(@directory) unless File.directory?(@directory)
     if File.exists?("#{@directory}/qinfo")
       qinfo = Hash.new
