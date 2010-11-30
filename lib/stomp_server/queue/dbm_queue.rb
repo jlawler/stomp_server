@@ -27,11 +27,12 @@ class DBMQueue < Queue
   end
 
   def dbmopen(dbname)
-    if @dbm == 'bdb'
+    case @dbm
+    when 'bdb'
       BDB::Hash.new(dbname, nil, "a")
-    elsif @dbm == 'dbm'
+    when 'dbm'
       DBM.open(dbname)
-    elsif @dbm == 'gdbm'
+    when 'gdbm'
       GDBM.open(dbname)
     end
   end
@@ -49,10 +50,10 @@ class DBMQueue < Queue
   def _close_queue(dest)
     @db[dest][:dbh].close
     dbname = @db[dest][:dbname]
-    File.delete(dbname) if File.exists?(dbname)
-    File.delete("#{dbname}.db") if File.exists?("#{dbname}.db")
-    File.delete("#{dbname}.pag") if File.exists?("#{dbname}.pag")
-    File.delete("#{dbname}.dir") if File.exists?("#{dbname}.dir")
+    [ '', '.db',  '.pag',  '.dir'  ].each do |ext|
+      filename = dbname + ext
+      File.delete(filename) if File.exists?(filename) 
+    end
   end
 
   def _writeframe(dest,frame,msgid)

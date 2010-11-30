@@ -32,7 +32,9 @@ module StompServer
         :configfile => 'stompserver.conf',
         :logfile => 'stompserver.log',
         :pidfile => 'stompserver.pid',
-        :checkpoint => 0
+        :checkpoint => 0,
+        :timeout => 60,
+        :timeout_check_freq => 30
       }
       @opts = getopts
       if opts[:debug]
@@ -112,10 +114,11 @@ module StompServer
         puts "FAILED to change user:group #{@opts[:user]}:#{@opts[:group]}: #$!"
         exit 1
       end
-
-      Dir.mkdir(@opts[:working_dir]) unless File.directory?(@opts[:working_dir])
-      Dir.mkdir(@opts[:logdir]) unless File.directory?(@opts[:logdir])
-      Dir.mkdir(@opts[:etcdir]) unless File.directory?(@opts[:etcdir])
+      
+     [:working_dir,
+      :logdir,
+      :etcdir
+     ].each { |dir|  Dir.mkdir(@opts[dir]) unless File.directory?(@opts[dir]) }
 
       if @opts[:daemon]
         Daemonize.daemonize(log_file=@opts[:logfile])
@@ -125,21 +128,26 @@ module StompServer
 
       # Write pidfile
       open(@opts[:pidfile],"w") {|f| f.write(Process.pid) }
+      
+      qstore = case @opts[:queue]
+               when 'dbm'
+                 StompServer::DBMQueue.new(@opts[:storage])
+               when 'file'
+                 StompServer::FileQueue.new(@opts[:storage])
+               when 'activerecord'
+                 require 'stomp_server/queue/activerecord_queue'
+                 StompServer::ActiveRecordQueue.new(@opts[:etcdir], @opts[:storage])
+               else
+                 StompServer::MemoryQueue.new
+               end
 
-      if @opts[:queue] == 'dbm'
-        qstore=StompServer::DBMQueue.new(@opts[:storage])
-      elsif @opts[:queue] == 'file'
-        qstore=StompServer::FileQueue.new(@opts[:storage])
-      elsif @opts[:queue] == 'activerecord'
-        require 'stomp_server/queue/activerecord_queue'
-        qstore=StompServer::ActiveRecordQueue.new(@opts[:etcdir], @opts[:storage])
-      else
-        qstore=StompServer::MemoryQueue.new
-      end
       qstore.checkpoint_interval = @opts[:checkpoint]
       puts "Checkpoing interval is #{qstore.checkpoint_interval}" if $DEBUG
       @topic_manager = StompServer::TopicManager.new
-      @queue_manager = StompServer::QueueManager.new(qstore, :monitor_sleep_time => @opts[:monitor_sleep_time])
+      @queue_manager = StompServer::QueueManager.new(qstore, 
+                                                     :timeout => @opts[:timeout],
+                                                     :timeout_check_freq => @opts[:timeout_check_freq],
+                                                     :monitor_sleep_time => @opts[:monitor_sleep_time])
       @auth_required = @opts[:auth]
 
       if @auth_required

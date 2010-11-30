@@ -2,10 +2,12 @@
 module StompServer
 class StompFrame
   attr_accessor :command, :headers, :body
+  attr_reader :timestamp
   def initialize(command=nil, headers=nil, body=nil)
     @command = command
     @headers = headers || {}
     @body = body || ''
+    @timestamp = Time.now
   end
  
   def to_s

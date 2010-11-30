@@ -1,3 +1,8 @@
+== 0.9.9.1 / 30 Nov 2010
+
+* Added timeouts for messages
+* Storage backends are now required to implement a 'destinations' method
+
 == 0.9.8 / 16 Aug 2007
 
 * Several storage backends instead of Madeleine (allow tradeoffs between

@@ -21,12 +21,15 @@ EventMachine::run do
   stomp = StompServer::Run.new(config.opts)
   stomp.start
 
-
   # Might want to uncomment this if you are sending large files
   #EventMachine::add_periodic_timer 10, proc {GC.start}
-  
+
+  # message timeouts
+  puts stomp
+  puts stomp.queue_manager
+
   puts "Client authorization enabled" if config.opts[:auth]
-  puts "Debug enabled" if config.opts[:debug]
+  puts "bug enabled" if config.opts[:debug]
 
   ## Start protocol handlers
 
