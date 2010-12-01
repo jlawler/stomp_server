@@ -30,7 +30,13 @@ queues:
   broadcast: 
     - topic.*.foo
     - topic.bar.>
- 
+ queues:
+  monitor: 
+    topic.monitor: topic.foo> 
+  broadcast:  #This broadcast syntax is because I might come up with config options
+    'topic.*.foo': true
+    'topic.bar.>': true
+
 
 You can get a message queue when: 
   when a different party calls sendmsg

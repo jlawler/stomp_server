@@ -1,0 +1,6 @@
+#!/usr/bin/env ruby
+
+THIS_DIR=File.dirname(File.expand_path(__FILE__))
+
+$:.unshift(THIS_DIR + '/lib')
+load THIS_DIR + '/bin/stompserver'
