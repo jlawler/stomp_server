@@ -11,7 +11,20 @@ class Stomp < EventMachine::Connection
   def initialize *args
     super
   end
-
+#  def ack msgid
+#  end
+#  def unacked?
+#    !!self.stomp_state.unacked
+#  end
+#  def unacked= x
+#    self.stomp_state.unacked=x
+#  end
+#  def unacked 
+#    self.stomp_state.unacked
+#  end
+#  def stomp_state
+#    @stomp_state||=UserStompState.new
+#  end
   def post_init
     @sfr = StompServer::StompFrameRecognizer.new
     @transactions = {}

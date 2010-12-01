@@ -116,6 +116,9 @@ class Queue
     return true
   end
 
+#  JWLTODO Tyler needs this
+#  def peek(dest)
+#  end
   def dequeue(dest)
     return false unless message_for?(dest)
     msgid = @queues[dest][:frames].shift

@@ -63,7 +63,7 @@ class QueueManager
 
   def initialize(qstore, opts={})
     @qstore = qstore
-    @queues = Hash.new { Array.new }
+    @queues = Hash.new 
     @pending = Hash.new
     if $STOMP_SERVER
       monitor = StompServer::QueueMonitor.new(@qstore,@queues,opts)
@@ -80,6 +80,9 @@ class QueueManager
     puts "Subscribing to #{dest}"
     user = Struct::QueueUser.new(connection, use_ack)
     @queues[dest] += [user]
+    # JWLTODO
+    # dests = @queues.add_subscription(dest,user)
+    # dests.each{|d|send_destination_backlog(d,user) unless user.unacked?}
     send_destination_backlog(dest,user) unless dest == '/queue/monitor'
   end
 
@@ -87,6 +90,8 @@ class QueueManager
   # used when use_ack == true
   def send_a_backlog(connection)
     puts "Sending a backlog" if $DEBUG
+    # JWLTODO : First, send a queued broadcast msg if there is one.  else, check qstores
+    # JWLTODO possible_queues = @queues.queues_by_conn(c)
     # lookup queues with data for this connection
     possible_queues = @queues.select{ |destination,users|
       @qstore.message_for?(destination) &&
@@ -132,27 +137,27 @@ class QueueManager
     # we shouldn't just reutrn, we should still send_a_backlog
     # -- JWL 2010/11/20
     puts "Acking #{frame.headers['message-id']}" if $DEBUG
-    unless @pending[connection]
+    unless @pending[connection] #JWLTODO connection.acked?
       puts "No message pending for connection!"
       return
     end
     msgid = frame.headers['message-id']
-    p_msgid = @pending[connection].headers['message-id']
+    p_msgid = @pending[connection].headers['message-id'] #JWLTODO connection.unacked
     if p_msgid != msgid
       # We don't know what happened, we requeue
       # (probably a client connecting to a restarted server)
-      frame = @pending[connection]
+      frame = @pending[connection] #JWLTODO connection.unacked
       @qstore.requeue(frame.headers['destination'],frame)
       puts "Invalid message-id (received #{msgid} != #{p_msgid})"
     end
-    @pending.delete connection
+    @pending.delete connection #JWLTODO connection.ack(msgid)
     # We are free to work now, look if there's something for us
     send_a_backlog(connection)
   end
 
   def disconnect(connection)
     puts "Disconnecting"
-    frame = @pending[connection]
+    frame = @pending[connection] #JWLTODO connection.unacked
     if frame
       @qstore.requeue(frame.headers['destination'],frame)
       @pending.delete connection
@@ -162,13 +167,14 @@ class QueueManager
       queue.delete_if { |qu| qu.connection == connection }
       @queues.delete(dest) if queue.empty?
     end
+    # @queues.disconnect(user)
   end
 
   def send_to_user(frame, user)
     connection = user.connection
     if user.ack
       raise "other connection's end already busy" if @pending[connection]
-      @pending[connection] = frame
+      @pending[connection] = frame #connection.unacked = frame
     end
     connection.stomp_send_data(frame)
   end
@@ -184,12 +190,13 @@ class QueueManager
     # -- JWL 2010/11/20
 
     # Lookup a user willing to handle this destination
-    available_users = @queues[dest].reject{|user| @pending[user.connection]}
+    available_users = @queues[dest].reject{|user| @pending[user.connection]} #JWLTODO @queues.conns_by_topic(dest)
     if available_users.empty?
       @qstore.enqueue(dest,frame)
       return
     end
 
+    # if broadcast, add to all users broadcast-queue 
     # Look for a user with ack (we favor reliability)
     reliable_user = available_users.find{|u| u.ack}
 

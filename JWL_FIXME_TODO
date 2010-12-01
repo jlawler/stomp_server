@@ -17,3 +17,23 @@ Note:  The general algorithm is this:
   when someone acks a message:
     Do we have any pending messages?  If so, send it to them.
 
+
+Notes for adding configurable broadcast + monitoring queues:
+Create config yaml a la:
+seperator: '.'
+queues:
+  monitor: topic.monitor
+  broadcast: topic.monitor
+queues:
+  monitor: 
+    topic.monitor: topic.foo> 
+  broadcast: 
+    - topic.*.foo
+    - topic.bar.>
+ 
+
+You can get a message queue when: 
+  when a different party calls sendmsg
+  when you ack <- not sure how to choose which is next message, broadcastqueue, or qstore
+  when you subscribe <- doesn't affect us, unless we allow "presubscribed" users, which we don't
+
