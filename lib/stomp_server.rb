@@ -55,6 +55,8 @@ module StompServer
       copts.on("-d", "--debug", String, "Turn on debug messages") {|d| @defaults[:debug] = true}
       copts.on("-a", "--auth", String, "Require client authorization") {|a| @defaults[:auth] = true}
       copts.on("-c", "--checkpoint=SECONDS", Integer, "Time between checkpointing the queues in seconds (default: 0)") {|c| @defaults[:checkpoint] = c}
+      copts.on("-t", "--timeout=SECONDS", Integer, 'Number of seconds to keep an unsent message in a queue') {|t| @defaults[:timeout] = t}
+      copts.on("-f", "--freq=SECONDS", Integer, 'Interval between checking queues for timeout messages') {|f| @defaults[:timeout_check_freq] = f }
       copts.on("-h", "--help", "Show this message") do
         puts copts
         exit
