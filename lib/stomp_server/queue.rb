@@ -1,6 +1,8 @@
+require 'stomp_server/queue/popable'
 
 module StompServer
 class Queue
+  include Popable
   attr_accessor :checkpoint_interval
   def initialize(directory='.stompserver', delete_empty=true)
     @stompid = StompServer::StompId.new
@@ -28,6 +30,10 @@ class Queue
     # of frames that are put in the queue.  Should probably also read it after saving it to confirm integrity.
     # Removed, this badly corrupt the queue when stopping with messages
     #EventMachine::add_periodic_timer 1800, proc {@queues.keys.each {|dest| close_queue(dest)};save_queue_state }
+  end
+
+  def destinations
+    @queues.keys
   end
 
   def stop

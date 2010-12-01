@@ -1,4 +1,4 @@
-# QueueManager is used in conjunction with a storage class.  The storage class MUST implement the following two methods:
+# QueueManager is used in conjunction with a storage class.  The storage class MUST implement the following four methods:
 #
 # - enqueue(queue name, frame)
 # enqueue pushes a frame to the top of the queue in FIFO order. It's return value is ignored. enqueue must also set the 
@@ -8,7 +8,10 @@
 # dequeue removes a frame from the bottom of the queue and returns it.
 #
 # - requeue(queue name,frame)
-# does the same as enqueue, except it puts the from at the bottom of the queue
+# does the same as enqueue, except it puts the frame at the bottom of the queue
+#
+# - destinations
+# returns a list of queue names, aka destinations. Required to implement message timeouts
 #
 # The storage class MAY implement the stop() method which can be used to do any housekeeping that needs to be done before 
 # stompserver shuts down. stop() will be called when stompserver is shut down.
@@ -19,7 +22,6 @@
 
 module StompServer
 class QueueMonitor
-
   def initialize(qstore,queues,opts={})
     @monitor_sleep_time = opts[:monitor_sleep_time]||5 
     @qstore = qstore
@@ -38,7 +40,7 @@ class QueueMonitor
     users = @queues['/queue/monitor']
     return if users.size == 0
     stats = @qstore.monitor
-    return if stats.size == 0
+#    return if stats.size == 0
     body = ''
 
     stats.each do |queue,qstats|
@@ -65,6 +67,9 @@ class QueueManager
     @qstore = qstore
     @queues = Hash.new 
     @pending = Hash.new
+    @timeout = opts[:timeout] || 60
+    @timeout_check_freq = opts[:timeout_check_freq] || 30
+    EventMachine::add_periodic_timer @timeout_check_freq, proc { clean_queues } 
     if $STOMP_SERVER
       monitor = StompServer::QueueMonitor.new(@qstore,@queues,opts)
       monitor.start
@@ -77,7 +82,7 @@ class QueueManager
   end
 
   def subscribe(dest, connection, use_ack=false)
-    puts "Subscribing to #{dest}"
+    puts "subscribing to #{dest}"   
     user = Struct::QueueUser.new(connection, use_ack)
     @queues[dest] += [user]
     # JWLTODO
@@ -129,6 +134,7 @@ class QueueManager
       queue.delete_if { |qu| qu.connection == connection and d == dest}
     end
     @queues.delete(dest) if @queues[dest].empty?
+    puts "deleting #{dest}"
   end
 
   def ack(connection, frame)
@@ -223,5 +229,17 @@ class QueueManager
     @qstore.enqueue(dest,frame)
   end
 
+  # check queues for stale messages older than a timeout
+  def clean_queues
+    @qstore.destinations.each do |dest| 
+      @qstore.popwhile(dest) { |frame| timed_out? frame  }
+    end
+  end
+
+  def timed_out?(message)
+    (message.timestamp + @timeout) < Time.now 
+  end
 end
 end
+
+

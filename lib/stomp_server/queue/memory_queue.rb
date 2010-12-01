@@ -1,6 +1,7 @@
 
 module StompServer
 class MemoryQueue
+  include Popable
   attr_accessor :checkpoint_interval
 
   def initialize
@@ -12,6 +13,10 @@ class MemoryQueue
   end
 
   def stop
+  end
+
+  def destinations
+    @messages.keys
   end
 
   def monitor

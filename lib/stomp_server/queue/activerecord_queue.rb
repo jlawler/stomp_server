@@ -9,6 +9,7 @@ require 'yaml'
 
 module StompServer
 class ActiveRecordQueue
+  include Popable
   attr_accessor :checkpoint_interval
 
   def initialize(configdir, storagedir)
@@ -82,6 +83,10 @@ class ActiveRecordQueue
   def assign_id(frame, queue_name)
     msgid = @stompid[@frames[queue_name][:last_index] += 1]
     frame.headers['message-id'] = msgid
+  end
+  
+  def destinations
+    @frames.keys
   end
 
   private
