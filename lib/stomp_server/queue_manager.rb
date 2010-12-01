@@ -214,9 +214,7 @@ class QueueManager
 
   # check queues for stale messages older than a timeout
   def clean_queues
-    puts "cleaning queues #{ @queues }"
-    @qstore.destinations.each do |dest|  # could we abstract this further down?  probably would do anything other than move this code
-      puts "cleaning #{ dest }"
+    @qstore.destinations.each do |dest| 
       @qstore.popwhile(dest) { |frame| timed_out? frame  }
     end
   end
