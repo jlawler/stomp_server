@@ -21,8 +21,7 @@ class TestQueues < Test::Unit::TestCase
   
   class UserMock
     attr_accessor :data
-    def initialize ; @data = '' ; end
-    def stomp_send_data(data); @data += data.to_s ; end
+    def stomp_send_data(data);@data||='';  @data += data.to_s ; end
     def connected?;true;end
   end
   
@@ -117,7 +116,7 @@ class TestQueues < Test::Unit::TestCase
     
     u2 = UserMock.new
     @t.subscribe(t, u2) 
-    assert_equal('', u2.data)
+    assert_equal(nil, u2.data)
   end
   
 end
